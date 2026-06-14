@@ -64,6 +64,7 @@ class GraphSetup:
           )
           EDGE TABLES (
             `{self.dataset_ref}.relationships` AS RelatesTo
+              KEY (person_id, place_id)
               SOURCE KEY (person_id) REFERENCES Person (person_id)
               DESTINATION KEY (place_id) REFERENCES Place (place_id)
               PROPERTIES (visit_date, relationship_type)
@@ -82,7 +83,18 @@ class GraphSetup:
         logger.info("Complete graph setup finished.")
 
 if __name__ == "__main__":
-    # Example local run
-    # setup = GraphSetup(project_id="your-project-id", dataset_id="entities_dataset")
-    # setup.setup_all()
-    pass
+    import argparse
+    import sys
+    
+    parser = argparse.ArgumentParser(description="Set up BigQuery datasets, tables, and property graphs.")
+    parser.add_argument("--project", default="filipegracio-ai-learning", help="GCP Project ID")
+    parser.add_argument("--dataset", default="entities_graph_toy", help="BigQuery Dataset ID")
+    args = parser.parse_args()
+    
+    try:
+        setup = GraphSetup(project_id=args.project, dataset_id=args.dataset)
+        setup.setup_all()
+    except Exception as e:
+        logger.error(f"Failed to setup graph: {e}")
+        sys.exit(1)
+
