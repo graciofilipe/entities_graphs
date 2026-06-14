@@ -1,0 +1,10 @@
+steps:
+  # Install dependencies
+  - name: 'python:3.10'
+    entrypoint: 'pip'
+    args: ['install', '-r', 'requirements.txt', '--user']
+
+  # Run tests
+  - name: 'python:3.10'
+    entrypoint: 'python'
+    args: ['-m', 'pytest', 'tests/']
