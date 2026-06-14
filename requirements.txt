@@ -3,3 +3,8 @@ pytest
 pandas
 networkx
 pydantic
+
+google-adk
+pypdf
+google-cloud-bigquery
+google-cloud-aiplatform[agent_engines,adk]
