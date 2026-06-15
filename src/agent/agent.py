@@ -26,5 +26,29 @@ root_agent = Agent(
 )
 
 from vertexai.agent_engines import AdkApp
-app = AdkApp(agent=root_agent)
 
+def safe_session_service_builder(*args, **kwargs):
+    from google.adk.sessions.vertex_ai_session_service import VertexAiSessionService
+    
+    class SafeVertexAiSessionService(VertexAiSessionService):
+        def _clean_session_id(self, session_id):
+            if session_id:
+                return session_id.split('/')[-1]
+            return session_id
+
+        async def get_session(self, *, user_id, session_id, **kwargs):
+            session_id = self._clean_session_id(session_id)
+            return await super().get_session(user_id=user_id, session_id=session_id, **kwargs)
+
+        async def create_session(self, *, user_id, session_id=None, state=None, **kwargs):
+            session_id = self._clean_session_id(session_id)
+            return await super().create_session(user_id=user_id, session_id=session_id, state=state, **kwargs)
+            
+        async def delete_session(self, *, user_id, session_id, **kwargs):
+            session_id = self._clean_session_id(session_id)
+            return await super().delete_session(user_id=user_id, session_id=session_id, **kwargs)
+
+    kwargs['location'] = 'us-central1'
+    return SafeVertexAiSessionService(*args, **kwargs)
+
+app = AdkApp(agent=root_agent, session_service_builder=safe_session_service_builder)
