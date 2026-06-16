@@ -23,40 +23,20 @@ def read_document(file_path: str) -> str:
         return f"Error reading document: {str(e)}"
 
 def write_to_bigquery(people: list[dict], places: list[dict], relationships: list[dict], project_id: str = 'filipegracio-ai-learning', dataset_id: str = 'entities_graph_toy') -> str:
-    """Writes extracted entities and relationships to BigQuery graph tables.
+    """Writes extracted entities and relationships to BigQuery graph tables using names as keys.
     
     Args:
-        people: List of dicts with 'person_id' (natural key), 'name', 'age'.
-        places: List of dicts with 'place_id' (natural key), 'name', 'type'.
-        relationships: List of dicts with 'person_id', 'place_id', 'visit_date', 'relationship_type'.
+        people: List of dicts with 'name', 'age'.
+        places: List of dicts with 'name', 'type'.
+        relationships: List of dicts with 'source_entity', 'target_entity', 'date', 'relationship_type'.
         project_id: GCP Project ID.
         dataset_id: BigQuery Dataset ID.
     """
     try:
         from google.cloud import bigquery
-        import uuid
         
         client = bigquery.Client(project=project_id)
         dataset_ref = f"{project_id}.{dataset_id}"
-        
-        # Disambiguate and generate UUIDs
-        person_uuid_map = {}
-        for p in people:
-            natural_key = p['person_id']
-            if natural_key not in person_uuid_map:
-                person_uuid_map[natural_key] = str(uuid.uuid4())
-            p['person_id'] = person_uuid_map[natural_key]
-            
-        place_uuid_map = {}
-        for p in places:
-            natural_key = p['place_id']
-            if natural_key not in place_uuid_map:
-                place_uuid_map[natural_key] = str(uuid.uuid4())
-            p['place_id'] = place_uuid_map[natural_key]
-            
-        for r in relationships:
-            r['person_id'] = person_uuid_map.get(r['person_id'], r['person_id'])
-            r['place_id'] = place_uuid_map.get(r['place_id'], r['place_id'])
             
         # Insert into BigQuery
         errors = []
@@ -77,3 +57,45 @@ def write_to_bigquery(people: list[dict], places: list[dict], relationships: lis
         import logging
         logging.error(f"Error writing to BigQuery: {e}")
         return f"Error writing to BigQuery: {str(e)}"
+
+def check_existing_entities(people_names: list[str], place_names: list[str], project_id: str = 'filipegracio-ai-learning', dataset_id: str = 'entities_graph_toy') -> str:
+    """Checks which people and places already exist in BigQuery.
+    
+    Args:
+        people_names: List of people names to check.
+        place_names: List of place names to check.
+        project_id: GCP Project ID.
+        dataset_id: BigQuery Dataset ID.
+        
+    Returns:
+        A JSON string containing lists of existing_people and existing_places.
+    """
+    try:
+        from google.cloud import bigquery
+        import json
+        
+        client = bigquery.Client(project=project_id)
+        dataset_ref = f"{project_id}.{dataset_id}"
+        
+        existing_people = []
+        if people_names:
+            names_formatted = ", ".join([f"'{name.replace(chr(39), chr(39)+chr(39))}'" for name in people_names])
+            query = f"SELECT name FROM `{dataset_ref}.people` WHERE name IN ({names_formatted})"
+            job = client.query(query)
+            existing_people = [row.name for row in job.result()]
+            
+        existing_places = []
+        if place_names:
+            names_formatted = ", ".join([f"'{name.replace(chr(39), chr(39)+chr(39))}'" for name in place_names])
+            query = f"SELECT name FROM `{dataset_ref}.places` WHERE name IN ({names_formatted})"
+            job = client.query(query)
+            existing_places = [row.name for row in job.result()]
+            
+        return json.dumps({
+            "existing_people": existing_people,
+            "existing_places": existing_places
+        })
+    except Exception as e:
+        import logging
+        logging.error(f"Error checking entities: {e}")
+        return f"Error checking entities: {str(e)}"

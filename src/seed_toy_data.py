@@ -11,27 +11,30 @@ def seed_data(project_id: str, dataset_id: str):
     dataset_ref = f"{project_id}.{dataset_id}"
 
     people_data = [
-        {"person_id": "p1", "name": "Alice", "age": 30},
-        {"person_id": "p2", "name": "Bob", "age": 25},
-        {"person_id": "p3", "name": "Charlie", "age": 35},
-        {"person_id": "p4", "name": "Diana", "age": 28},
-        {"person_id": "p5", "name": "Eve", "age": 40}
+        {"name": "Alice", "age": 30},
+        {"name": "Bob", "age": 25},
+        {"name": "Charlie", "age": 35},
+        {"name": "Diana", "age": 28},
+        {"name": "Eve", "age": 40},
+        {"name": "Filipe Gracio", "age": 35},
+        {"name": "Mario Vlachakis", "age": 30}
     ]
 
     places_data = [
-        {"place_id": "pl1", "name": "Central Park", "type": "Park"},
-        {"place_id": "pl2", "name": "Empire State Building", "type": "Building"},
-        {"place_id": "pl3", "name": "Statue of Liberty", "type": "Monument"},
-        {"place_id": "pl4", "name": "Times Square", "type": "Square"},
-        {"place_id": "pl5", "name": "Brooklyn Bridge", "type": "Bridge"}
+        {"name": "Central Park", "type": "Park"},
+        {"name": "Empire State Building", "type": "Building"},
+        {"name": "Statue of Liberty", "type": "Monument"},
+        {"name": "Times Square", "type": "Square"},
+        {"name": "Brooklyn Bridge", "type": "Bridge"}
     ]
 
     relationships_data = [
-        {"person_id": "p1", "place_id": "pl1", "visit_date": "2023-05-01", "relationship_type": "VISITED"},
-        {"person_id": "p2", "place_id": "pl2", "visit_date": "2023-06-15", "relationship_type": "VISITED"},
-        {"person_id": "p3", "place_id": "pl3", "visit_date": "2023-07-20", "relationship_type": "VISITED"},
-        {"person_id": "p4", "place_id": "pl4", "visit_date": "2023-08-10", "relationship_type": "VISITED"},
-        {"person_id": "p5", "place_id": "pl5", "visit_date": "2023-09-05", "relationship_type": "VISITED"}
+        {"source_entity": "Alice", "target_entity": "Central Park", "date": "2023-05-01", "relationship_type": "VISITED"},
+        {"source_entity": "Bob", "target_entity": "Empire State Building", "date": "2023-06-15", "relationship_type": "VISITED"},
+        {"source_entity": "Charlie", "target_entity": "Statue of Liberty", "date": "2023-07-20", "relationship_type": "VISITED"},
+        {"source_entity": "Diana", "target_entity": "Times Square", "date": "2023-08-10", "relationship_type": "VISITED"},
+        {"source_entity": "Eve", "target_entity": "Brooklyn Bridge", "date": "2023-09-05", "relationship_type": "VISITED"},
+        {"source_entity": "Filipe Gracio", "target_entity": "Mario Vlachakis", "date": "2023-09-06", "relationship_type": "TALKED_TO"}
     ]
 
     try:

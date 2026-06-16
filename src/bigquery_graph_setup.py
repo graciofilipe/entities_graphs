@@ -21,7 +21,6 @@ class GraphSetup:
     def create_node_tables(self):
         # People Table
         people_schema = [
-            bigquery.SchemaField("person_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("age", "INTEGER"),
         ]
@@ -30,7 +29,6 @@ class GraphSetup:
         
         # Places Table
         places_schema = [
-            bigquery.SchemaField("place_id", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("name", "STRING", mode="REQUIRED"),
             bigquery.SchemaField("type", "STRING"),
         ]
@@ -39,35 +37,44 @@ class GraphSetup:
         logger.info("Node tables (people, places) created.")
 
     def create_edge_tables(self):
-        # Relationships Table (e.g., VISITED)
+        # Drop the old relationships table to ensure schema updates apply
+        self.client.delete_table(f"{self.dataset_ref}.relationships", not_found_ok=True)
+        # Relationships Table (generic for any-to-any interactions)
         relationships_schema = [
-            bigquery.SchemaField("person_id", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("place_id", "STRING", mode="REQUIRED"),
-            bigquery.SchemaField("visit_date", "DATE"),
-            bigquery.SchemaField("relationship_type", "STRING"), # e.g., "VISITED", "LIVES_IN"
+            bigquery.SchemaField("source_entity", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("target_entity", "STRING", mode="REQUIRED"),
+            bigquery.SchemaField("date", "DATE"),
+            bigquery.SchemaField("relationship_type", "STRING"), # e.g., "VISITED", "LIVES_IN", "TALKED_TO"
         ]
         relationships_table = bigquery.Table(f"{self.dataset_ref}.relationships", schema=relationships_schema)
-        self.client.create_table(relationships_table, exists_ok=True)
+        self.client.create_table(relationships_table)
         logger.info("Edge tables (relationships) created.")
 
     def create_property_graph(self, graph_name: str = "entities_graph"):
         # BigQuery Graph creation query
         query = f"""
-        CREATE PROPERTY GRAPH IF NOT EXISTS `{self.dataset_ref}.{graph_name}`
+        CREATE OR REPLACE PROPERTY GRAPH `{self.dataset_ref}.{graph_name}`
           NODE TABLES (
             `{self.dataset_ref}.people` AS Person
-              KEY (person_id)
+              KEY (name)
               PROPERTIES (name, age),
             `{self.dataset_ref}.places` AS Place
-              KEY (place_id)
+              KEY (name)
               PROPERTIES (name, type)
           )
           EDGE TABLES (
-            `{self.dataset_ref}.relationships` AS RelatesTo
-              KEY (person_id, place_id)
-              SOURCE KEY (person_id) REFERENCES Person (person_id)
-              DESTINATION KEY (place_id) REFERENCES Place (place_id)
-              PROPERTIES (visit_date, relationship_type)
+            `{self.dataset_ref}.relationships` AS PersonToPlace
+              KEY (source_entity, target_entity)
+              SOURCE KEY (source_entity) REFERENCES Person (name)
+              DESTINATION KEY (target_entity) REFERENCES Place (name)
+              LABEL interacts_with
+              PROPERTIES (date, relationship_type),
+            `{self.dataset_ref}.relationships` AS PersonToPerson
+              KEY (source_entity, target_entity)
+              SOURCE KEY (source_entity) REFERENCES Person (name)
+              DESTINATION KEY (target_entity) REFERENCES Person (name)
+              LABEL interacts_with
+              PROPERTIES (date, relationship_type)
           );
         """
         job = self.client.query(query)
